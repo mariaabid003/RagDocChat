@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Environment & secrets — NEVER commit these
+.env
+backend/.env
+
+# Data directories (can be large)
+backend/uploads/
+backend/chroma_db/
+
+# IDE
+.vscode/
+.idea/

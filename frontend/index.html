@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocChat AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #0c1a0b;
+      --sidebar-bg:    #08120a;
+      --surface:       #13201a;
+      --surface-2:     #1c2e22;
+      --surface-3:     #243528;
+      --border:        #273d2c;
+      --border-soft:   #1c2f20;
+      --accent:        #5fa862;
+      --accent-2:      #7ec47f;
+      --accent-dark:   #4a8a4f;
+      --accent-glow:   rgba(95,168,98,0.18);
+      --accent-dim:    rgba(95,168,98,0.08);
+      --text-1:        #e2f0dc;
+      --text-2:        #92b98d;
+      --text-3:        #567550;
+      --text-4:        #344d30;
+      --text-5:        #1e3020;
+      --user-bubble:   #19291e;
+      --danger:        #e05c5c;
+      --danger-bg:     rgba(224,92,92,0.1);
+      --warning:       #d4a853;
+      --shadow:        0 2px 12px rgba(0,0,0,0.5);
+      --shadow-lg:     0 8px 40px rgba(0,0,0,0.7);
+      --font:          'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --r:             12px;
+      --r-sm:          8px;
+      --r-xs:          6px;
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text-1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ══════════════════════════════════
+       FOREST BACKGROUND LAYER
+    ══════════════════════════════════ */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 10%,  rgba(40,100,50,0.12) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 70% at 85% 80%,  rgba(30, 80,40,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(20, 60,30,0.06) 0%, transparent 55%);
+    }
+
+    /* ══════════════════════════════════
+       AUTH PAGE
+    ══════════════════════════════════ */
+    #auth-page {
+      position: fixed; inset: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+    #auth-page.hidden { display: none; }
+
+    /* Forest scene behind auth card */
+    .auth-forest {
+      position: absolute; inset: 0; z-index: 0;
+      background: linear-gradient(160deg, #07120a 0%, #0d1e0f 40%, #091508 100%);
+      overflow: hidden;
+    }
+    .auth-forest::after {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 20% 30%, rgba(50,120,60,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 80% 70%, rgba(30, 90,45,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 30% 30% at 50% 10%, rgba(70,140,70,0.10) 0%, transparent 50%);
+    }
+
+    /* SVG tree silhouettes in auth background */
+    .auth-trees {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 55%; z-index: 1; opacity: .45;
+    }
+
+    /* Firefly dots */
+    .firefly {
+      position: absolute;
+      width: 3px; height: 3px;
+      background: rgba(120,220,110,0.8);
+      border-radius: 50%;
+      box-shadow: 0 0 6px 2px rgba(100,200,90,0.5);
+      animation: float var(--dur) ease-in-out infinite alternate;
+    }
+    @keyframes float {
+      from { transform: translate(0,0); opacity: .2; }
+      to   { transform: translate(var(--dx), var(--dy)); opacity: .9; }
+    }
+
+    /* Auth card */
+    .auth-card-wrap {
+      position: relative; z-index: 10;
+      width: 100%; max-width: 400px;
+      animation: cardIn .4s cubic-bezier(.22,1,.36,1);
+    }
+    @keyframes cardIn {
+      from { opacity:0; transform: translateY(24px) scale(.97); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .auth-logo-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; margin-bottom: 28px;
+    }
+    .auth-leaf-icon {
+      width: 46px; height: 46px;
+      background: linear-gradient(135deg, #4a8a4f, #7ec47f);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(95,168,98,0.35);
+    }
+    .auth-logo-name {
+      font-size: 26px; font-weight: 700; letter-spacing: -.6px;
+      background: linear-gradient(135deg, #7ec47f, #aee0af);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .auth-card {
+      background: rgba(15,24,14,0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(95,168,98,0.2);
+      border-radius: 18px;
+      padding: 32px 28px 28px;
+      box-shadow: var(--shadow-lg), 0 0 60px rgba(40,100,50,0.12);
+      position: relative; overflow: hidden;
+    }
+    .auth-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, #5fa862, #7ec47f, #5fa862, transparent);
+    }
+
+    .auth-title {
+      font-size: 20px; font-weight: 600; color: var(--text-1);
+      text-align: center; margin-bottom: 4px;
+    }
+    .auth-subtitle {
+      font-size: 13px; color: var(--text-3);
+      text-align: center; margin-bottom: 26px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 13px; }
+    .form-label { font-size: 12.5px; font-weight: 500; color: var(--text-2); }
+    .form-input {
+      padding: 10px 13px;
+      background: rgba(0,0,0,0.35);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      font-family: var(--font); font-size: 14px; color: var(--text-1);
+      outline: none; width: 100%;
+      transition: border-color .18s, box-shadow .18s;
+    }
+    .form-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(95,168,98,0.15);
+    }
+    .form-input::placeholder { color: var(--text-5); }
+
+    .auth-btn {
+      width: 100%; padding: 11px;
+      margin-top: 6px;
+      background: linear-gradient(135deg, #4d9152, #68bb6a);
+      color: #fff; border: none; border-radius: var(--r-sm);
+      font-family: var(--font); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: opacity .15s, transform .1s;
+      box-shadow: 0 3px 16px rgba(95,168,98,0.3);
+    }
+    .auth-btn:hover:not(:disabled) { opacity: .9; }
+    .auth-btn:active { transform: scale(.98); }
+    .auth-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .auth-err {
+      background: var(--danger-bg); border: 1px solid rgba(224,92,92,0.3);
+      color: #f08080; font-size: 13px; padding: 9px 12px;
+      border-radius: var(--r-xs); margin-bottom: 12px;
+      display: none; line-height: 1.5;
+    }
+    .auth-err.show { display: block; }
+
+    .auth-success {
+      background: rgba(95,168,98,0.1); border: 1px solid rgba(95,168,98,0.3);
+      color: #7ec47f; font-size: 13px; padding: 9px 12px;
+      border-radius: var(--r-xs); margin-bottom: 12px;
+      display: none; line-height: 1.5;
+    }
+    .auth-success.show { display: block; }
+
+    .auth-switch {
+      text-align: center; font-size: 13px;
+      color: var(--text-3); margin-top: 16px;
+    }
+    .auth-switch a {
+      color: var(--accent-2); cursor: pointer; font-weight: 500;
+    }
+    .auth-switch a:hover { text-decoration: underline; }
+
+    /* ══════════════════════════════════
+       MAIN APP SHELL
+    ══════════════════════════════════ */
+    #app {
+      display: flex; flex: 1; overflow: hidden;
+      position: relative; z-index: 1;
+    }
+    #app.hidden { display: none; }
+
+    /* ══════════════════════════════════
+       SIDEBAR
+    ══════════════════════════════════ */
+    .sidebar {
+      width: 256px; flex-shrink: 0;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border-soft);
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+    }
+
+    /* Subtle leaf watermark in sidebar */
+    .sidebar::after {
+      content: '';
+      position: absolute; bottom: 80px; right: -20px;
+      width: 140px; height: 140px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 5C20 5 5 30 5 50c0 15 8 28 20 35 0-16 8-28 20-38-10 10-14 22-14 35 4 2 9 3 13 3 24 0 46-18 46-40C90 25 72 5 50 5z' fill='%23263d29' opacity='0.4'/%3E%3C/svg%3E") no-repeat center/contain;
+      pointer-events: none; opacity: .35;
+    }
+
+    .sidebar-header {
+      padding: 14px 12px 8px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-brand {
+      display: flex; align-items: center; gap: 9px;
+      padding: 5px 6px 12px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .brand-leaf {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, #4a8a4f, #7ec47f);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 10px rgba(95,168,98,0.25);
+    }
+    .brand-name {
+      font-size: 15px; font-weight: 600; color: var(--text-1);
+    }
+
+    .btn-new-chat {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 9px 12px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      color: var(--text-2);
+      font-family: var(--font); font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: background .15s, border-color .15s, color .15s;
+      position: relative; z-index: 1;
+    }
+    .btn-new-chat:hover {
+      background: var(--surface); border-color: var(--accent-dark);
+      color: var(--text-1);
+    }
+
+    /* ── Chat history list ─────────────── */
+    .history-scroll {
+      flex: 1; overflow-y: auto;
+      padding: 6px 8px 10px;
+      position: relative; z-index: 1;
+    }
+    .history-scroll::-webkit-scrollbar { width: 3px; }
+    .history-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    .history-group-label {
+      font-size: 11px; font-weight: 600;
+      color: var(--text-4); text-transform: uppercase;
+      letter-spacing: .55px;
+      padding: 10px 8px 4px;
+    }
+
+    .history-item {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 10px;
+      border-radius: var(--r-xs);
+      cursor: pointer;
+      transition: background .13s;
+      position: relative;
+    }
+    .history-item:hover { background: var(--surface); }
+    .history-item.active {
+      background: var(--surface-2);
+      border-left: 2px solid var(--accent-dark);
+      padding-left: 8px;
+    }
+
+    .history-item-text {
+      flex: 1; min-width: 0;
+      font-size: 13px; color: var(--text-2);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .history-item.active .history-item-text { color: var(--text-1); }
+
+    .history-item-del {
+      background: none; border: none; color: var(--text-4);
+      cursor: pointer; padding: 2px 5px; border-radius: 4px; font-size: 11px;
+      opacity: 0; transition: opacity .13s, color .13s, background .13s;
+      flex-shrink: 0;
+    }
+    .history-item:hover .history-item-del { opacity: 1; }
+    .history-item-del:hover { color: var(--danger); background: var(--danger-bg); }
+
+    .sidebar-empty {
+      text-align: center; color: var(--text-4);
+      font-size: 12.5px; padding: 32px 14px; line-height: 1.8;
+    }
+
+    /* ── Sidebar user footer ─────────────── */
+    .sidebar-footer {
+      padding: 10px 10px 14px;
+      border-top: 1px solid var(--border-soft);
+      display: flex; align-items: center; gap: 9px;
+      flex-shrink: 0; position: relative; z-index: 1;
+    }
+    .user-av {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #3a7040, #5fa862);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name-txt  { font-size: 12.5px; font-weight: 500; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-email-txt { font-size: 11px; color: var(--text-4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .btn-logout {
+      background: none; border: none; color: var(--text-4);
+      cursor: pointer; padding: 5px; border-radius: 5px;
+      transition: color .13s, background .13s; flex-shrink: 0;
+    }
+    .btn-logout:hover { color: var(--danger); background: var(--danger-bg); }
+
+    /* ══════════════════════════════════
+       MAIN CHAT AREA
+    ══════════════════════════════════ */
+    .chat-main {
+      flex: 1; display: flex; flex-direction: column;
+      overflow: hidden; background: var(--bg); position: relative;
+    }
+
+    /* Subtle light-through-leaves background on main */
+    .chat-main::before {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 70% 15%, rgba(50,120,60,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 50% at 20% 90%, rgba(30, 90,45,0.05) 0%, transparent 55%);
+    }
+
+    /* ── Header ────────────────────────── */
+    .chat-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 24px;
+      border-bottom: 1px solid var(--border-soft);
+      flex-shrink: 0; position: relative; z-index: 2;
+      background: rgba(8,18,10,0.6); backdrop-filter: blur(8px);
+    }
+    .chat-header-left {}
+    .chat-header-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+    .chat-header-meta  { font-size: 11.5px; color: var(--text-4); margin-top: 1px; }
+
+    .doc-badge {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--accent-dim); border: 1px solid rgba(95,168,98,0.22);
+      color: var(--accent); font-size: 12px; font-weight: 500;
+      padding: 4px 11px; border-radius: 99px;
+      cursor: pointer; transition: background .15s;
+    }
+    .doc-badge:hover { background: rgba(95,168,98,0.14); }
+
+    /* Connection error */
+    #conn-banner {
+      display: none; flex-shrink: 0;
+      background: rgba(224,92,92,0.08);
+      border-bottom: 1px solid rgba(224,92,92,0.2);
+      color: #e08080; font-size: 12.5px; font-weight: 500;
+      padding: 6px 24px; text-align: center; position: relative; z-index: 2;
+    }
+    #conn-banner.show { display: block; }
+
+    /* ── Messages ─────────────────────── */
+    .messages {
+      flex: 1; overflow-y: auto;
+      padding: 8px 0 12px;
+      position: relative; z-index: 1;
+    }
+    .messages::-webkit-scrollbar { width: 5px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* Welcome screen */
+    .welcome {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100%; padding: 40px 24px;
+      text-align: center;
+    }
+    .welcome-tree {
+      margin-bottom: 26px;
+      filter: drop-shadow(0 6px 24px rgba(95,168,98,0.2));
+    }
+    .welcome h2 {
+      font-size: 24px; font-weight: 600; color: var(--text-1);
+      margin-bottom: 10px; letter-spacing: -.4px;
+    }
+    .welcome-sub {
+      font-size: 14px; color: var(--text-3); max-width: 380px; line-height: 1.75;
+    }
+
+    .chip-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-top: 30px; width: 100%; max-width: 500px;
+    }
+    .chip {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 13px 16px;
+      text-align: left; cursor: pointer; font-family: var(--font);
+      transition: background .15s, border-color .15s, transform .12s;
+    }
+    .chip:hover {
+      background: var(--surface-2); border-color: var(--accent-dark);
+      transform: translateY(-1px);
+    }
+    .chip-title { font-size: 13px; font-weight: 500; color: var(--text-1); }
+    .chip-sub   { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+
+    /* Message rows */
+    .msg-row {
+      display: flex; gap: 12px;
+      padding: 6px 24px;
+      animation: msgFade .25s ease;
+      max-width: 900px; margin: 0 auto; width: 100%;
+    }
+    @keyframes msgFade {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .msg-row.user { flex-direction: row-reverse; }
+
+    .msg-av {
+      width: 32px; height: 32px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+    }
+    .msg-av.user-av {
+      background: linear-gradient(135deg, #3a7040, #5fa862);
+      color: #fff; font-size: 13px;
+    }
+    .msg-av.ai-av {
+      background: var(--surface-2); border: 1.5px solid var(--border);
+    }
+
+    .msg-body { max-width: 640px; min-width: 0; flex: 1; }
+
+    .msg-bubble {
+      font-size: 14px; line-height: 1.75;
+      padding: 11px 16px;
+      border-radius: var(--r-sm);
+    }
+    .msg-row.user .msg-bubble {
+      background: var(--user-bubble);
+      border: 1px solid var(--border);
+      color: var(--text-1);
+      border-radius: var(--r-sm) var(--r-sm) 3px var(--r-sm);
+      display: inline-block;
+    }
+    .msg-row.assistant .msg-bubble {
+      background: transparent; padding-left: 2px; color: var(--text-1);
+    }
+
+    /* Markdown */
+    .msg-bubble p { margin-bottom: .65em; }
+    .msg-bubble p:last-child { margin-bottom: 0; }
+    .msg-bubble strong { font-weight: 600; color: var(--text-1); }
+    .msg-bubble em { font-style: italic; color: var(--text-2); }
+    .msg-bubble code {
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 5px;
+      font-family: 'Courier New', monospace; font-size: 12.5px; color: #8ecf8e;
+    }
+    .msg-bubble pre {
+      background: rgba(0,0,0,0.45); border: 1px solid var(--border);
+      border-radius: var(--r-xs); padding: 12px 14px;
+      overflow-x: auto; margin: 10px 0;
+    }
+    .msg-bubble pre code { background: none; border: none; padding: 0; font-size: 13px; line-height: 1.55; }
+    .msg-bubble ul, .msg-bubble ol { padding-left: 22px; margin: 6px 0; }
+    .msg-bubble li { margin-bottom: 4px; }
+    .msg-bubble h1,.msg-bubble h2,.msg-bubble h3 { font-weight: 600; margin: 12px 0 5px; color: var(--text-1); }
+    .msg-bubble h1 { font-size: 17px; }
+    .msg-bubble h2 { font-size: 15px; }
+    .msg-bubble h3 { font-size: 14px; }
+    .msg-bubble blockquote {
+      border-left: 3px solid var(--accent-dark); padding-left: 12px;
+      color: var(--text-2); margin: 8px 0; font-style: italic;
+    }
+    .msg-bubble hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+
+    /* Sources */
+    .sources-row {
+      display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px;
+    }
+    .source-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--accent-dim); border: 1px solid rgba(95,168,98,0.2);
+      color: var(--accent); font-size: 11.5px; font-weight: 500;
+      padding: 3px 9px; border-radius: 99px;
+    }
+
+    /* Typing */
+    .typing-wrap { display: flex; align-items: center; gap: 5px; padding: 14px 2px; }
+    .dot {
+      width: 6px; height: 6px; background: var(--text-4); border-radius: 50%;
+      animation: dotPop .9s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: .16s; }
+    .dot:nth-child(3) { animation-delay: .32s; }
+    @keyframes dotPop {
+      0%,60%,100% { transform: translateY(0); background: var(--text-4); }
+      30% { transform: translateY(-6px); background: var(--accent); }
+    }
+
+    /* ── Input area ─────────────────────── */
+    .input-area {
+      padding: 10px 24px 18px;
+      flex-shrink: 0; position: relative; z-index: 2;
+      background: linear-gradient(to top, rgba(8,18,10,0.95) 60%, transparent);
+    }
+
+    /* Uploaded doc chips */
+    .doc-chips {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 0 2px 8px;
+    }
+    .doc-chips:empty { display: none; }
+    .doc-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 99px; padding: 4px 10px 4px 8px;
+      font-size: 12px; color: var(--text-2);
+      animation: chipIn .2s ease;
+    }
+    @keyframes chipIn {
+      from { opacity: 0; transform: scale(.85); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .doc-chip-ext {
+      font-size: 9px; font-weight: 700; padding: 1px 4px;
+      border-radius: 3px; text-transform: uppercase; font-family: monospace;
+    }
+    .ext-pdf  { background: rgba(224,92,92,0.1); color: #e08080; }
+    .ext-txt  { background: rgba(95,168,98,0.1); color: var(--accent); }
+    .ext-docx { background: rgba(120,100,220,0.1); color: #a090f0; }
+    .doc-chip-name { max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doc-chip-del {
+      background: none; border: none; color: var(--text-4);
+      cursor: pointer; font-size: 11px; padding: 0 1px;
+      transition: color .13s; flex-shrink: 0;
+    }
+    .doc-chip-del:hover { color: var(--danger); }
+
+    /* Input box */
+    .input-box {
+      display: flex; align-items: flex-end; gap: 7px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      padding: 10px 10px 10px 14px;
+      transition: border-color .18s, box-shadow .18s;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.35);
+    }
+    .input-box:focus-within {
+      border-color: var(--accent-dark);
+      box-shadow: 0 0 0 3px rgba(95,168,98,0.12), 0 2px 16px rgba(0,0,0,0.35);
+    }
+
+    .btn-attach {
+      background: none; border: none; color: var(--text-3);
+      cursor: pointer; padding: 5px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      transition: color .15s, background .15s; flex-shrink: 0;
+    }
+    .btn-attach:hover { color: var(--accent); background: var(--accent-dim); }
+
+    #chat-input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text-1); font-family: var(--font);
+      font-size: 14px; resize: none; max-height: 160px;
+      line-height: 1.55; padding-top: 1px;
+    }
+    #chat-input::placeholder { color: var(--text-5); }
+
+    #send-btn {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #4d9152, #68bb6a);
+      border: none; border-radius: 8px; color: #fff;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: opacity .15s, transform .1s;
+      box-shadow: 0 2px 10px rgba(95,168,98,0.3);
+    }
+    #send-btn:hover:not(:disabled) { opacity: .9; }
+    #send-btn:active { transform: scale(.92); }
+    #send-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+    .input-hint {
+      font-size: 11px; color: var(--text-5);
+      text-align: center; margin-top: 8px;
+    }
+
+    /* ── Upload progress bar ─────────────── */
+    .upload-bar { display: none; margin-bottom: 8px; }
+    .upload-bar.show { display: block; }
+    .upload-bar-track { height: 3px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .upload-bar-fill {
+      height: 100%; background: linear-gradient(90deg, #4a8a4f, #7ec47f);
+      border-radius: 99px; width: 0%; transition: width .3s;
+    }
+    .upload-bar-label { font-size: 11px; color: var(--text-3); margin-top: 4px; text-align: center; }
+
+    /* ══════════════════════════════════
+       TOASTS
+    ══════════════════════════════════ */
+    #toasts {
+      position: fixed; top: 16px; right: 16px; z-index: 9999;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .toast {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      padding: 10px 14px; border-radius: var(--r-xs);
+      font-size: 13px; font-weight: 500; color: var(--text-1);
+      animation: toastIn .2s ease; max-width: 320px; box-shadow: var(--shadow);
+    }
+    .toast.error   { border-left-color: var(--danger); }
+    .toast.warning { border-left-color: var(--warning); }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(12px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div id="toasts"></div>
+
+<!-- ════════════════════════════════
+     AUTH PAGE
+════════════════════════════════ -->
+<div id="auth-page">
+  <!-- Animated forest background -->
+  <div class="auth-forest">
+    <!-- Fireflies (created in JS) -->
+    <div id="fireflies"></div>
+
+    <!-- Tree silhouettes SVG -->
+    <svg class="auth-trees" viewBox="0 0 1440 400" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <!-- Far-back misty trees (lightest) -->
+      <g opacity="0.18" fill="#2a4a2e">
+        <polygon points="180,400 220,220 260,400"/>
+        <polygon points="210,400 250,200 290,400"/>
+        <polygon points="860,400 910,210 960,400"/>
+        <polygon points="890,400 940,195 990,400"/>
+        <polygon points="1200,400 1240,230 1280,400"/>
+        <polygon points="1230,400 1270,215 1310,400"/>
+      </g>
+      <!-- Mid trees -->
+      <g opacity="0.3" fill="#1e3c22">
+        <polygon points="60,400 120,180 180,400"/>
+        <rect x="115" y="340" width="10" height="60" rx="3"/>
+        <polygon points="90,400 155,155 220,400"/>
+        <rect x="150" y="345" width="10" height="55" rx="3"/>
+        <polygon points="350,400 410,170 470,400"/>
+        <rect x="405" y="340" width="12" height="60" rx="3"/>
+        <polygon points="380,400 445,145 510,400"/>
+        <rect x="440" y="340" width="12" height="60" rx="3"/>
+        <polygon points="700,400 760,185 820,400"/>
+        <rect x="755" y="342" width="11" height="58" rx="3"/>
+        <polygon points="730,400 792,162 854,400"/>
+        <rect x="787" y="340" width="11" height="60" rx="3"/>
+        <polygon points="1050,400 1110,175 1170,400"/>
+        <rect x="1105" y="340" width="12" height="60" rx="3"/>
+        <polygon points="1340,400 1395,190 1450,400"/>
+        <rect x="1390" y="342" width="11" height="58" rx="3"/>
+      </g>
+      <!-- Front trees (darkest) -->
+      <g opacity="0.55" fill="#142818">
+        <polygon points="0,400 50,250 100,400"/>
+        <rect x="45" y="358" width="10" height="42" rx="3"/>
+        <polygon points="20,400 80,220 140,400"/>
+        <rect x="75" y="355" width="10" height="45" rx="3"/>
+        <polygon points="260,400 320,230 380,400"/>
+        <rect x="315" y="355" width="12" height="45" rx="3"/>
+        <polygon points="290,400 355,200 420,400"/>
+        <rect x="350" y="352" width="12" height="48" rx="3"/>
+        <polygon points="560,400 625,215 690,400"/>
+        <rect x="620" y="354" width="12" height="46" rx="3"/>
+        <polygon points="590,400 660,190 730,400"/>
+        <rect x="655" y="352" width="12" height="48" rx="3"/>
+        <polygon points="900,400 960,225 1020,400"/>
+        <rect x="955" y="355" width="12" height="45" rx="3"/>
+        <polygon points="930,400 995,198 1060,400"/>
+        <rect x="990" y="352" width="12" height="48" rx="3"/>
+        <polygon points="1150,400 1210,210 1270,400"/>
+        <rect x="1205" y="354" width="12" height="46" rx="3"/>
+        <polygon points="1380,400 1430,235 1480,400"/>
+        <rect x="1425" y="356" width="11" height="44" rx="3"/>
+      </g>
+      <!-- Ground -->
+      <ellipse cx="720" cy="400" rx="900" ry="30" fill="#0f2214" opacity="0.8"/>
+    </svg>
+  </div>
+
+  <div class="auth-card-wrap">
+    <div class="auth-logo-row">
+      <div class="auth-leaf-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6 3 2 8 2 13c0 4 2.5 7.5 6 9 0-5 2-9 5.5-12C10 13 9 17 9.5 22c.8.3 1.6.5 2.5.5 5.5 0 10-4.5 10-10C22 7 17.5 2 12 2z" fill="white"/>
+        </svg>
+      </div>
+      <span class="auth-logo-name">DocChat AI</span>
+    </div>
+
+    <!-- Login -->
+    <div id="view-login">
+      <div class="auth-card">
+        <div class="auth-title">Welcome back</div>
+        <div class="auth-subtitle">Sign in to continue your conversations</div>
+        <div id="login-success" class="auth-success"></div>
+        <div id="login-err" class="auth-err"></div>
+        <form onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" id="login-email" type="email" placeholder="you@example.com" required autocomplete="email"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input class="form-input" id="login-pass" type="password" placeholder="••••••••" required autocomplete="current-password"/>
+          </div>
+          <button class="auth-btn" type="submit" id="login-btn">Sign in</button>
+        </form>
+      </div>
+      <div class="auth-switch">Don't have an account? <a onclick="showView('register')">Create one</a></div>
+    </div>
+
+    <!-- Register -->
+    <div id="view-register" class="hidden">
+      <div class="auth-card">
+        <div class="auth-title">Create your account</div>
+        <div class="auth-subtitle">Start chatting with your documents</div>
+        <div id="reg-err" class="auth-err"></div>
+        <form onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label class="form-label">Full name</label>
+            <input class="form-input" id="reg-name" type="text" placeholder="Jane Doe" required autocomplete="name"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" id="reg-email" type="email" placeholder="you@example.com" required autocomplete="email"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input class="form-input" id="reg-pass" type="password" placeholder="Min. 8 characters" required minlength="8" autocomplete="new-password"/>
+          </div>
+          <button class="auth-btn" type="submit" id="reg-btn">Create account</button>
+        </form>
+      </div>
+      <div class="auth-switch">Already have an account? <a onclick="showView('login')">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     MAIN APP
+════════════════════════════════ -->
+<div id="app" class="hidden">
+
+  <!-- ── Sidebar ─────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="brand-leaf">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2C6 3 2 8 2 13c0 4 2.5 7.5 6 9 0-5 2-9 5.5-12C10 13 9 17 9.5 22c.8.3 1.6.5 2.5.5 5.5 0 10-4.5 10-10C22 7 17.5 2 12 2z" fill="white"/>
+          </svg>
+        </div>
+        <span class="brand-name">DocChat AI</span>
+      </div>
+
+      <button class="btn-new-chat" id="btn-new-chat">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        New chat
+      </button>
+    </div>
+
+    <div class="history-scroll" id="history-scroll">
+      <div class="sidebar-empty" id="history-empty">
+        🌿 No conversations yet.<br/>Start a new chat!
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-av" id="user-av">?</div>
+      <div class="user-info">
+        <div class="user-name-txt"  id="u-name">—</div>
+        <div class="user-email-txt" id="u-email">—</div>
+      </div>
+      <button class="btn-logout" title="Sign out" onclick="handleLogout()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main chat ─────────────────── -->
+  <main class="chat-main">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="chat-header-title" id="chat-title">New Conversation</div>
+        <div class="chat-header-meta"  id="chat-meta">Ask me anything about your documents</div>
+      </div>
+      <button class="doc-badge" id="doc-badge" onclick="document.getElementById('file-input').click()" title="Attach a document">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        <span id="doc-count-label">0 docs</span>
+      </button>
+    </div>
+
+    <div id="conn-banner">⚠️ Cannot reach backend at <strong>localhost:8000</strong> — is it running?</div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-area">
+      <!-- Doc chips -->
+      <div class="doc-chips" id="doc-chips"></div>
+
+      <!-- Upload progress -->
+      <div class="upload-bar" id="upload-bar">
+        <div class="upload-bar-track"><div class="upload-bar-fill" id="upload-fill"></div></div>
+        <div class="upload-bar-label" id="upload-label">Uploading…</div>
+      </div>
+
+      <div class="input-box">
+        <button class="btn-attach" id="btn-attach" title="Attach document (PDF · TXT · DOCX)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <textarea id="chat-input" placeholder="Message DocChat AI…" rows="1"></textarea>
+        <button id="send-btn" title="Send (Enter)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+      <input type="file" id="file-input" accept=".pdf,.txt,.docx" multiple style="display:none"/>
+      <div class="input-hint">Enter to send · Shift+Enter for new line · 📎 attach PDF, TXT or DOCX</div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════ */
+const API = 'http://localhost:8000';
+
+/* ═══════════════════════════════════════════
+   FIREFLIES (auth background)
+═══════════════════════════════════════════ */
+(function spawnFireflies() {
+  const container = document.getElementById('fireflies');
+  if (!container) return;
+  for (let i = 0; i < 28; i++) {
+    const f = document.createElement('div');
+    f.className = 'firefly';
+    f.style.cssText = `
+      left: ${Math.random() * 100}%;
+      top:  ${20 + Math.random() * 65}%;
+      --dur: ${3 + Math.random() * 5}s;
+      --dx:  ${(Math.random() - 0.5) * 60}px;
+      --dy:  ${(Math.random() - 0.5) * 50}px;
+      animation-delay: ${Math.random() * 5}s;
+    `;
+    container.appendChild(f);
+  }
+})();
+
+/* ═══════════════════════════════════════════
+   MARKDOWN
+═══════════════════════════════════════════ */
+function renderMd(raw) {
+  let h = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  h = h.replace(/```[\w]*\n?([\s\S]*?)```/g, (_,c) => `<pre><code>${c.trim()}</code></pre>`);
+  h = h.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+  h = h.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  h = h.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  h = h.replace(/^# (.+)$/gm,  '<h1>$1</h1>');
+  h = h.replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>');
+  h = h.replace(/\*\*(.+?)\*\*/g,    '<strong>$1</strong>');
+  h = h.replace(/\*(.+?)\*/g,        '<em>$1</em>');
+  h = h.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+  h = h.replace(/^---+$/gm, '<hr>');
+  h = h.replace(/^[\*\-] (.+)$/gm, '<li>$1</li>');
+  h = h.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+  h = h.replace(/<\/ul>\s*<ul>/g, '');
+  h = h.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  h = h.split(/\n\n+/).map(b => {
+    if (/^<(h[1-6]|ul|ol|li|pre|blockquote|hr)/.test(b.trim())) return b;
+    const t = b.trim(); if (!t) return '';
+    return `<p>${t.replace(/\n/g,'<br>')}</p>`;
+  }).join('\n');
+  return h;
+}
+
+/* ═══════════════════════════════════════════
+   AUTH STATE
+═══════════════════════════════════════════ */
+let authToken = null, currentUser = null;
+const ah = () => authToken ? { Authorization: `Bearer ${authToken}` } : {};
+
+/* ═══════════════════════════════════════════
+   AUTH VIEWS
+═══════════════════════════════════════════ */
+function showView(v) {
+  document.getElementById('view-login').classList.toggle('hidden',    v !== 'login');
+  document.getElementById('view-register').classList.toggle('hidden', v !== 'register');
+  document.getElementById('login-err').classList.remove('show');
+  document.getElementById('reg-err').classList.remove('show');
+  // Only clear success banner when going to register (keep it visible on login)
+  if (v === 'register') document.getElementById('login-success').classList.remove('show');
+}
+
+function showAuthErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.add('show');
+}
+
+function showLoginSuccess(msg) {
+  const el = document.getElementById('login-success');
+  el.textContent = msg; el.classList.add('show');
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  document.getElementById('login-err').classList.remove('show');
+  try {
+    const r = await fetch(`${API}/auth/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        email:    document.getElementById('login-email').value.trim(),
+        password: document.getElementById('login-pass').value,
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Login failed');
+    onAuthOK(d);
+  } catch(err) {
+    showAuthErr('login-err',
+      (err.name==='TypeError'||err.name==='TimeoutError')
+        ? 'Cannot reach server. Is the backend running on port 8000?'
+        : err.message);
+  } finally { btn.disabled = false; btn.textContent = 'Sign in'; }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('reg-btn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  document.getElementById('reg-err').classList.remove('show');
+  try {
+    const r = await fetch(`${API}/auth/register`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name:     document.getElementById('reg-name').value.trim(),
+        email:    document.getElementById('reg-email').value.trim(),
+        password: document.getElementById('reg-pass').value,
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Registration failed');
+    // Account created — send user to login, do NOT open the app
+    showView('login');
+    // Pre-fill their email and show a success notice
+    document.getElementById('login-email').value = document.getElementById('reg-email').value;
+    showLoginSuccess('Account created! Please sign in to continue.');
+  } catch(err) {
+    showAuthErr('reg-err',
+      (err.name==='TypeError'||err.name==='TimeoutError')
+        ? 'Cannot reach server. Is the backend running on port 8000?'
+        : err.message);
+  } finally { btn.disabled = false; btn.textContent = 'Create account'; }
+}
+
+function onAuthOK(data) {
+  authToken   = data.access_token;
+  currentUser = { name: data.name, email: data.email };
+  localStorage.setItem('dochat_token', authToken);
+  localStorage.setItem('dochat_user',  JSON.stringify(currentUser));
+  document.getElementById('auth-page').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  updateUserUI();
+  initApp();
+}
+
+function updateUserUI() {
+  if (!currentUser) return;
+  const initials = (currentUser.name||'?').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+  document.getElementById('user-av').textContent    = initials;
+  document.getElementById('u-name').textContent     = currentUser.name  || '—';
+  document.getElementById('u-email').textContent    = currentUser.email || '—';
+}
+
+function handleLogout() {
+  authToken = null; currentUser = null;
+  ['dochat_token','dochat_user','dochat_sessions'].forEach(k => localStorage.removeItem(k));
+  documents=[]; sessions=[]; activeId=null;
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('auth-page').classList.remove('hidden');
+  showView('login');
+}
+
+/* ═══════════════════════════════════════════
+   API HELPER
+═══════════════════════════════════════════ */
+async function api(path, opts={}) {
+  opts.headers = { ...opts.headers, ...ah() };
+  try {
+    const r = await fetch(`${API}${path}`, {
+      ...opts, signal: opts.signal || AbortSignal.timeout(30000)
+    });
+    document.getElementById('conn-banner').classList.remove('show');
+    if (r.status === 401) { handleLogout(); throw new Error('Session expired.'); }
+    return r;
+  } catch(err) {
+    if (err.name==='TypeError'||err.name==='TimeoutError')
+      document.getElementById('conn-banner').classList.add('show');
+    throw err;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+let documents = [], sessions = [], activeId = null, isLoading = false;
+
+/* ═══════════════════════════════════════════
+   TOASTS
+═══════════════════════════════════════════ */
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`; el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+/* ═══════════════════════════════════════════
+   CHAT SESSIONS
+═══════════════════════════════════════════ */
+function saveSessions() { localStorage.setItem('dochat_sessions', JSON.stringify(sessions)); }
+
+async function loadSessions() {
+  try {
+    const r = await api('/chats');
+    if (r.ok) { const d = await r.json(); sessions = d.sessions||[]; saveSessions(); }
+  } catch {
+    try { sessions = JSON.parse(localStorage.getItem('dochat_sessions')||'[]'); } catch { sessions=[]; }
+  }
+}
+
+function getSess(id) { return sessions.find(s=>s.id===id)||null; }
+
+function titleFrom(t) {
+  const w = t.trim().split(/\s+/).slice(0,7).join(' ');
+  return w.length < t.trim().length ? w+'…' : w;
+}
+
+/* Group sessions by date */
+function renderHistory() {
+  const scroll = document.getElementById('history-scroll');
+  scroll.querySelectorAll('.history-item,.history-group-label').forEach(el=>el.remove());
+  const emptyEl = document.getElementById('history-empty');
+
+  if (sessions.length === 0) {
+    if (!emptyEl) {
+      const d=document.createElement('div'); d.className='sidebar-empty'; d.id='history-empty';
+      d.innerHTML='🌿 No conversations yet.<br/>Start a new chat!'; scroll.appendChild(d);
+    }
+    return;
+  }
+  if (emptyEl) emptyEl.remove();
+
+  // Group by date
+  const now   = Date.now();
+  const day   = 86400000;
+  const groups = { 'Today':[], 'Yesterday':[], 'This week':[], 'Older':[] };
+  sessions.forEach(s => {
+    const diff = now - s.createdAt;
+    if      (diff < day)   groups['Today'].push(s);
+    else if (diff < 2*day) groups['Yesterday'].push(s);
+    else if (diff < 7*day) groups['This week'].push(s);
+    else                   groups['Older'].push(s);
+  });
+
+  Object.entries(groups).forEach(([label, items]) => {
+    if (!items.length) return;
+    const lbl = document.createElement('div');
+    lbl.className='history-group-label'; lbl.textContent=label;
+    scroll.appendChild(lbl);
+
+    items.forEach(sess => {
+      const item = document.createElement('div');
+      item.className = `history-item${sess.id===activeId?' active':''}`;
+      item.innerHTML = `
+        <span class="history-item-text">${escHtml(sess.title)}</span>
+        <button class="history-item-del" title="Delete">✕</button>`;
+      item.querySelector('.history-item-del').addEventListener('click',e=>{
+        e.stopPropagation(); deleteSession(sess.id);
+      });
+      item.addEventListener('click', ()=>switchSession(sess.id));
+      scroll.appendChild(item);
+    });
+  });
+}
+
+function switchSession(id) {
+  activeId = id;
+  const sess = getSess(id);
+  if (!sess) return;
+  document.getElementById('chat-title').textContent = sess.title;
+  document.getElementById('chat-meta').textContent  = `${sess.msgCount||0} message${(sess.msgCount||0)!==1?'s':''}`;
+  const win = document.getElementById('messages');
+  win.innerHTML = '';
+  if (!sess.messages||sess.messages.length===0) { win.appendChild(buildWelcome()); }
+  else { sess.messages.forEach(m=>appendMsg(m.role,m.content,m.sources||[],false)); }
+  renderHistory();
+  win.scrollTop = win.scrollHeight;
+}
+
+async function deleteSession(id) {
+  try { await api(`/chats/${id}`,{method:'DELETE'}); } catch{}
+  sessions = sessions.filter(s=>s.id!==id); saveSessions();
+  if (activeId===id) { activeId=null; startNew(); } else { renderHistory(); }
+}
+
+function createSession() {
+  const s = { id:'sess_'+Date.now(), title:'New conversation', messages:[], createdAt:Date.now(), msgCount:0 };
+  sessions.unshift(s); saveSessions(); return s;
+}
+
+function startNew() {
+  const s = createSession(); activeId = s.id;
+  document.getElementById('chat-title').textContent = 'New Conversation';
+  document.getElementById('chat-meta').textContent  = 'Ask me anything about your documents';
+  const win = document.getElementById('messages');
+  win.innerHTML=''; win.appendChild(buildWelcome());
+  renderHistory();
+}
+
+function buildWelcome() {
+  const div = document.createElement('div');
+  div.className='welcome'; div.id='welcome-screen';
+  div.innerHTML = `
+    <div class="welcome-tree">
+      <svg width="110" height="130" viewBox="0 0 110 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Glow -->
+        <ellipse cx="55" cy="115" rx="30" ry="8" fill="#2a4a2e" opacity="0.5"/>
+        <!-- Trunk -->
+        <rect x="49" y="90" width="12" height="35" rx="4" fill="#2a3d25"/>
+        <!-- Roots -->
+        <path d="M49 118 C42 122 35 120 30 125" stroke="#243522" stroke-width="3" stroke-linecap="round" fill="none"/>
+        <path d="M61 118 C68 122 75 120 80 125" stroke="#243522" stroke-width="3" stroke-linecap="round" fill="none"/>
+        <!-- Bottom layer -->
+        <polygon points="55,55 88,98 22,98" fill="#2d5c35"/>
+        <!-- Mid layer -->
+        <polygon points="55,35 84,80 26,80" fill="#3a7040"/>
+        <!-- Top layer -->
+        <polygon points="55,10 80,60 30,60" fill="#4a8a4f"/>
+        <!-- Sparkle leaves -->
+        <circle cx="38" cy="68" r="3" fill="#7ec47f" opacity="0.7"/>
+        <circle cx="72" cy="72" r="2.5" fill="#7ec47f" opacity="0.6"/>
+        <circle cx="48" cy="42" r="2" fill="#aee0af" opacity="0.8"/>
+        <circle cx="65" cy="48" r="2.5" fill="#7ec47f" opacity="0.5"/>
+        <circle cx="55" cy="22" r="2" fill="#c5f0c6" opacity="0.9"/>
+      </svg>
+    </div>
+    <h2>Ask your documents anything</h2>
+    <p class="welcome-sub">Attach a PDF, Word doc, or text file using the 📎 button, then ask anything in plain English.</p>
+    <div class="chip-grid">
+      <div class="chip" onclick="fillInput('Summarize this document')">
+        <div class="chip-title">📋 Summarize</div>
+        <div class="chip-sub">Get a quick overview</div>
+      </div>
+      <div class="chip" onclick="fillInput('What are the key findings?')">
+        <div class="chip-title">🔍 Key findings</div>
+        <div class="chip-sub">Highlight main points</div>
+      </div>
+      <div class="chip" onclick="fillInput('List the main topics covered')">
+        <div class="chip-title">📌 Main topics</div>
+        <div class="chip-sub">See what\\'s covered</div>
+      </div>
+      <div class="chip" onclick="fillInput('What conclusions are drawn?')">
+        <div class="chip-title">✅ Conclusions</div>
+        <div class="chip-sub">Find the takeaways</div>
+      </div>
+    </div>`;
+  return div;
+}
+
+/* ═══════════════════════════════════════════
+   DOCUMENTS
+═══════════════════════════════════════════ */
+async function loadDocuments() {
+  try {
+    const r = await api('/documents');
+    const d = await r.json();
+    documents = d.documents||[]; renderDocChips();
+  } catch{}
+}
+
+function renderDocChips() {
+  const row = document.getElementById('doc-chips');
+  row.innerHTML = '';
+  const badge = document.getElementById('doc-count-label');
+  badge.textContent = `${documents.length} doc${documents.length!==1?'s':''}`;
+
+  documents.forEach(doc => {
+    const ext = (doc.filename.split('.').pop()||'').toLowerCase();
+    const extCls = ext==='pdf'?'ext-pdf':ext==='txt'?'ext-txt':'ext-docx';
+    const chip = document.createElement('div');
+    chip.className='doc-chip';
+    chip.innerHTML = `
+      <span class="doc-chip-ext ${extCls}">${ext}</span>
+      <span class="doc-chip-name" title="${escHtml(doc.filename)}">${escHtml(doc.filename)}</span>
+      <button class="doc-chip-del" title="Remove">✕</button>`;
+    chip.querySelector('.doc-chip-del').addEventListener('click', ()=>deleteDoc(doc.doc_id));
+    row.appendChild(chip);
+  });
+}
+
+async function deleteDoc(docId) {
+  try {
+    const r = await api(`/documents/${docId}`,{method:'DELETE'});
+    if (!r.ok) { const d=await r.json(); throw new Error(d.detail||'Failed'); }
+    documents = documents.filter(d=>d.doc_id!==docId);
+    renderDocChips(); toast('Document removed');
+  } catch(err) { toast(`Failed: ${err.message}`,'error'); }
+}
+
+/* ── File upload via attach button ─────── */
+const fileInput = document.getElementById('file-input');
+document.getElementById('btn-attach').addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', ()=>{ uploadFiles([...fileInput.files]); fileInput.value=''; });
+
+async function uploadFiles(files) {
+  files = files.filter(f=>['pdf','txt','docx'].includes((f.name.split('.').pop()||'').toLowerCase()));
+  if (!files.length) return toast('PDF, TXT or DOCX only','warning');
+
+  const bar   = document.getElementById('upload-bar');
+  const fill  = document.getElementById('upload-fill');
+  const label = document.getElementById('upload-label');
+  bar.classList.add('show');
+
+  for (let i=0; i<files.length; i++) {
+    const f=files[i];
+    label.textContent = `Uploading ${f.name}…`;
+    fill.style.width  = `${Math.round((i/files.length)*100)}%`;
+    const form=new FormData(); form.append('file',f);
+    try {
+      const r=await api('/upload',{method:'POST',body:form});
+      const d=await r.json();
+      if (!r.ok) throw new Error(d.detail||'Upload failed');
+      documents=documents.filter(x=>x.doc_id!==d.doc_id);
+      documents.push({doc_id:d.doc_id,filename:d.filename,chunk_count:d.chunk_count});
+      renderDocChips();
+      toast(`✅ ${f.name} ready (${d.chunk_count} chunks)`);
+    } catch(err) {
+      toast(`❌ ${f.name}: ${err.name==='TypeError'?'Cannot reach server':err.message}`,'error');
+    }
+  }
+  fill.style.width='100%'; label.textContent='Done!';
+  setTimeout(()=>{ bar.classList.remove('show'); fill.style.width='0%'; },1400);
+}
+
+/* ═══════════════════════════════════════════
+   CHAT
+═══════════════════════════════════════════ */
+const chatInput = document.getElementById('chat-input');
+const sendBtn   = document.getElementById('send-btn');
+
+document.getElementById('btn-new-chat').addEventListener('click', startNew);
+function fillInput(t) { chatInput.value=t; chatInput.focus(); }
+
+chatInput.addEventListener('keydown', e=>{
+  if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+chatInput.addEventListener('input', ()=>{
+  chatInput.style.height='auto';
+  chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px';
+});
+sendBtn.addEventListener('click', sendMessage);
+
+function appendMsg(role, content, sources=[], animate=true) {
+  const w = document.getElementById('welcome-screen');
+  if (w) w.remove();
+  const win = document.getElementById('messages');
+
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+
+  const initials = (currentUser&&currentUser.name)
+    ? currentUser.name.split(' ').map(x=>x[0]||'').join('').slice(0,2).toUpperCase()
+    : 'U';
+
+  const av = role==='user'
+    ? `<div class="msg-av user-av">${initials}</div>`
+    : `<div class="msg-av ai-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C6 3 2 8 2 13c0 4 2.5 7.5 6 9 0-5 2-9 5.5-12C10 13 9 17 9.5 22c.8.3 1.6.5 2.5.5 5.5 0 10-4.5 10-10C22 7 17.5 2 12 2z" fill="#5fa862"/></svg></div>`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+
+  if (role==='assistant') {
+    bubble.innerHTML = renderMd(content);
+    if (sources.length) {
+      const row2=document.createElement('div'); row2.className='sources-row';
+      const seen=new Set();
+      sources.forEach(s=>{
+        if(seen.has(s.filename))return; seen.add(s.filename);
+        const tag=document.createElement('span'); tag.className='source-tag';
+        tag.innerHTML=`🍃 ${escHtml(s.filename)} <span style="opacity:.6">${(s.relevance*100).toFixed(0)}%</span>`;
+        row2.appendChild(tag);
+      });
+      bubble.appendChild(row2);
+    }
+  } else {
+    bubble.textContent = content;
+  }
+
+  const body = document.createElement('div'); body.className='msg-body';
+  body.appendChild(bubble);
+  row.innerHTML = av;
+  row.appendChild(body);
+  win.appendChild(row);
+  win.scrollTop = win.scrollHeight;
+  return row;
+}
+
+function showTyping() {
+  const w=document.getElementById('welcome-screen'); if(w)w.remove();
+  const win=document.getElementById('messages');
+  const row=document.createElement('div');
+  row.className='msg-row assistant'; row.id='typing-row';
+  row.innerHTML=`
+    <div class="msg-av ai-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C6 3 2 8 2 13c0 4 2.5 7.5 6 9 0-5 2-9 5.5-12C10 13 9 17 9.5 22c.8.3 1.6.5 2.5.5 5.5 0 10-4.5 10-10C22 7 17.5 2 12 2z" fill="#5fa862"/></svg></div>
+    <div class="msg-body"><div class="msg-bubble"><div class="typing-wrap"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div>`;
+  win.appendChild(row); win.scrollTop=win.scrollHeight;
+}
+function removeTyping() { const e=document.getElementById('typing-row'); if(e)e.remove(); }
+
+async function sendMessage() {
+  const question = chatInput.value.trim();
+  if (!question||isLoading) return;
+
+  if (documents.length===0) {
+    await loadDocuments();
+    if (documents.length===0) {
+      toast('Please attach a document first using the 📎 button','warning'); return;
+    }
+  }
+
+  if (!activeId||!getSess(activeId)) { const s=createSession(); activeId=s.id; }
+  const sess = getSess(activeId);
+
+  if (sess && (!sess.msgCount||sess.msgCount===0)) {
+    sess.title = titleFrom(question);
+    document.getElementById('chat-title').textContent = sess.title;
+    renderHistory();
+  }
+
+  isLoading=true; sendBtn.disabled=true;
+  chatInput.value=''; chatInput.style.height='auto';
+  appendMsg('user',question); showTyping();
+
+  try {
+    const r = await api('/chat',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        question, top_k:5,
+        session_id:    activeId,
+        session_title: sess ? sess.title : 'Chat',
+      }),
+    });
+    const data = await r.json();
+    removeTyping();
+    if (!r.ok) throw new Error(data.detail||'Something went wrong');
+
+    appendMsg('assistant', data.answer, data.sources||[]);
+
+    const afterSess = getSess(activeId);
+    if (afterSess) {
+      afterSess.messages.push({role:'user',      content:question,    sources:[]});
+      afterSess.messages.push({role:'assistant', content:data.answer, sources:data.sources||[]});
+      afterSess.msgCount = afterSess.messages.filter(m=>m.role==='user').length;
+      saveSessions();
+      document.getElementById('chat-title').textContent = afterSess.title;
+      document.getElementById('chat-meta').textContent  =
+        `${afterSess.msgCount} message${afterSess.msgCount!==1?'s':''}`;
+      renderHistory();
+    }
+  } catch(err) {
+    removeTyping();
+    appendMsg('assistant', `⚠️ ${err.name==='TypeError'?'Cannot reach server. Is the backend running?':err.message}`);
+  } finally { isLoading=false; sendBtn.disabled=false; chatInput.focus(); }
+}
+
+/* ═══════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════ */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function timeAgo(ts) {
+  const d=Date.now()-ts;
+  if(d<60000)return'just now';
+  if(d<3600000)return Math.floor(d/60000)+'m ago';
+  if(d<86400000)return Math.floor(d/3600000)+'h ago';
+  return Math.floor(d/86400000)+'d ago';
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+async function initApp() {
+  updateUserUI();
+  await loadSessions();
+  await loadDocuments();
+  if (sessions.length>0) switchSession(sessions[0].id);
+  else startNew();
+}
+
+async function validateToken(token) {
+  try {
+    const r=await fetch(`${API}/auth/me`,{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(5000)});
+    return r.ok;
+  } catch { return true; }
+}
+
+(async function boot() {
+  const tok  = localStorage.getItem('dochat_token');
+  const usr  = localStorage.getItem('dochat_user');
+  if (tok && usr) {
+    if (await validateToken(tok)) {
+      authToken=tok; currentUser=JSON.parse(usr);
+      document.getElementById('auth-page').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      initApp();
+    } else {
+      ['dochat_token','dochat_user','dochat_sessions'].forEach(k=>localStorage.removeItem(k));
+    }
+  }
+})();
+</script>
+</body>
+</html>
